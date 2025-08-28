@@ -175,3 +175,43 @@ def activity_history(request):
         'previous': activities_page.has_previous(),
         'results': serializer.data
     })
+
+@api_view(['GET'])
+@permission_classes([IsAuthenticated])
+def leaderboard(request):
+    """
+    Get leaderboard data for distance and calories.
+    """
+    from django.contrib.auth import get_user_model
+    User = get_user_model()
+    
+    # Get top users by total distance
+    distance_leaders = User.objects.annotate(
+        total_distance=Sum('activities__distance')
+    ).exclude(total_distance__isnull=True).order_by('-total_distance')[:10]
+    
+    # Get top users by total calories
+    calories_leaders = User.objects.annotate(
+        total_calories=Sum('activities__calories_burned')
+    ).exclude(total_calories__isnull=True).order_by('-total_calories')[:10]
+    
+    distance_data = [
+        {
+            'username': user.username,
+            'total_distance': float(user.total_distance or 0)
+        }
+        for user in distance_leaders
+    ]
+    
+    calories_data = [
+        {
+            'username': user.username,
+            'total_calories': user.total_calories or 0
+        }
+        for user in calories_leaders
+    ]
+    
+    return Response({
+        'distance_leaderboard': distance_data,
+        'calories_leaderboard': calories_data
+    })
