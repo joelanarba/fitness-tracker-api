@@ -1,6 +1,7 @@
 from rest_framework import serializers
 from django.contrib.auth import get_user_model
 from django.contrib.auth.password_validation import validate_password
+from .models import Developer
 
 User = get_user_model()
 
@@ -44,3 +45,37 @@ class PasswordChangeSerializer(serializers.Serializer):
         if attrs['new_password'] != attrs['confirm_password']:
             raise serializers.ValidationError("New passwords don't match")
         return attrs
+
+# Developer API serializers
+class DeveloperRegistrationSerializer(serializers.ModelSerializer):
+    class Meta:
+        model = Developer
+        fields = ('email', 'name', 'company', 'website', 'description')
+    
+    def validate_email(self, value):
+        if Developer.objects.filter(email=value, is_active=True).exists():
+            raise serializers.ValidationError("A developer account with this email already exists.")
+        return value
+
+class DeveloperSerializer(serializers.ModelSerializer):
+    class Meta:
+        model = Developer
+        fields = ('id', 'email', 'name', 'company', 'website', 'description', 
+                 'api_key', 'is_active', 'requests_per_hour', 'requests_per_day',
+                 'created_at', 'updated_at')
+        read_only_fields = ('id', 'api_key', 'created_at', 'updated_at')
+
+class DeveloperPublicSerializer(serializers.ModelSerializer):
+    """Serializer for public developer info (without sensitive data)"""
+    class Meta:
+        model = Developer
+        fields = ('id', 'name', 'company', 'website', 'created_at')
+
+class APIKeyResponseSerializer(serializers.ModelSerializer):
+    """Serializer for returning API key after registration"""
+    message = serializers.CharField(read_only=True)
+    
+    class Meta:
+        model = Developer
+        fields = ('id', 'email', 'name', 'api_key', 'message', 'created_at')
+        read_only_fields = ('id', 'api_key', 'created_at')

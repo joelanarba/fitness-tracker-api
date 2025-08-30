@@ -1,5 +1,5 @@
 from rest_framework import generics, status
-from rest_framework.decorators import api_view, permission_classes
+from rest_framework.decorators import api_view, permission_classes, authentication_classes
 from rest_framework.permissions import IsAuthenticated
 from rest_framework.response import Response
 from django_filters.rest_framework import DjangoFilterBackend
@@ -16,8 +16,16 @@ from .serializers import (
     ActivityMetricsSerializer
 )
 from .filters import ActivityFilter
+from users.authentication import APIKeyAuthentication
+
+class IsAPIAuthenticated:
+    """Custom permission class that works with API key authentication"""
+    def has_permission(self, request, view):
+        # Check if user is authenticated via API key
+        return hasattr(request.user, 'developer') or request.user.is_authenticated
 
 class ActivityListCreateView(generics.ListCreateAPIView):
+    authentication_classes = [APIKeyAuthentication]
     permission_classes = [IsAuthenticated]
     filter_backends = [DjangoFilterBackend, OrderingFilter]
     filterset_class = ActivityFilter
@@ -25,6 +33,13 @@ class ActivityListCreateView(generics.ListCreateAPIView):
     ordering = ['-date']
     
     def get_queryset(self):
+        # For API key users, we need to handle this differently
+        # Since we don't have a traditional User model for API key auth
+        if hasattr(self.request.user, 'developer'):
+            # This is an API key user - return all activities for demonstration
+            # In a real scenario, you might want to create activities tied to developers
+            # or implement a different user system
+            return Activity.objects.none()  # Return empty for now
         return Activity.objects.filter(user=self.request.user)
     
     def get_serializer_class(self):
@@ -33,33 +48,54 @@ class ActivityListCreateView(generics.ListCreateAPIView):
         return ActivitySerializer
     
     def perform_create(self, serializer):
+        # For API key authentication, we need to handle user assignment differently
+        if hasattr(self.request.user, 'developer'):
+            # For now, we'll create a demo response
+            # In a real implementation, you might create a User for each Developer
+            # or modify the Activity model to reference Developer instead
+            raise NotImplementedError(
+                "Activity creation for API key users requires additional implementation. "
+                "Consider creating a User account for each Developer or modifying the Activity model."
+            )
         serializer.save(user=self.request.user)
 
 class ActivityDetailView(generics.RetrieveUpdateDestroyAPIView):
+    authentication_classes = [APIKeyAuthentication]
     permission_classes = [IsAuthenticated]
     serializer_class = ActivitySerializer
     
     def get_queryset(self):
+        if hasattr(self.request.user, 'developer'):
+            return Activity.objects.none()
         return Activity.objects.filter(user=self.request.user)
 
 class GoalListCreateView(generics.ListCreateAPIView):
-    serializer_class = GoalSerializer
+    authentication_classes = [APIKeyAuthentication]
     permission_classes = [IsAuthenticated]
+    serializer_class = GoalSerializer
     
     def get_queryset(self):
+        if hasattr(self.request.user, 'developer'):
+            return Goal.objects.none()
         return Goal.objects.filter(user=self.request.user)
     
     def perform_create(self, serializer):
+        if hasattr(self.request.user, 'developer'):
+            raise NotImplementedError("Goal creation for API key users requires additional implementation.")
         serializer.save(user=self.request.user)
 
 class GoalDetailView(generics.RetrieveUpdateDestroyAPIView):
-    serializer_class = GoalSerializer
+    authentication_classes = [APIKeyAuthentication]
     permission_classes = [IsAuthenticated]
+    serializer_class = GoalSerializer
     
     def get_queryset(self):
+        if hasattr(self.request.user, 'developer'):
+            return Goal.objects.none()
         return Goal.objects.filter(user=self.request.user)
 
 @api_view(['GET'])
+@authentication_classes([APIKeyAuthentication])
 @permission_classes([IsAuthenticated])
 def activity_metrics(request):
     """
@@ -69,6 +105,29 @@ def activity_metrics(request):
     - end_date: YYYY-MM-DD
     - activity_type: activity type to filter by
     """
+    # For API key users, return demo data
+    if hasattr(request.user, 'developer'):
+        return Response({
+            "message": "Welcome to the Fitness Tracker API!",
+            "developer": request.user.developer.name,
+            "api_usage": "This endpoint would return activity metrics for authenticated users.",
+            "note": "To use this endpoint with real data, integrate with your user system.",
+            "demo_metrics": {
+                "total_activities": 25,
+                "total_duration": 1250,
+                "total_distance": "125.50",
+                "total_calories": 8750,
+                "average_duration": "50.00",
+                "most_common_activity": "running",
+                "activities_by_type": {
+                    "running": 12,
+                    "cycling": 8,
+                    "swimming": 5
+                }
+            }
+        })
+    
+    # Original implementation for JWT users
     user = request.user
     activities = Activity.objects.filter(user=user)
     
@@ -129,12 +188,36 @@ def activity_metrics(request):
     return Response(serializer.data)
 
 @api_view(['GET'])
+@authentication_classes([APIKeyAuthentication])
 @permission_classes([IsAuthenticated])
 def activity_history(request):
     """
     Get activity history with filters, sorting, and pagination.
-    This is an alias for the ActivityListCreateView but as a function-based view.
     """
+    if hasattr(request.user, 'developer'):
+        return Response({
+            "message": "Activity history endpoint",
+            "developer": request.user.developer.name,
+            "note": "This endpoint would return paginated activity history for authenticated users.",
+            "demo_data": {
+                "count": 25,
+                "next": False,
+                "previous": False,
+                "results": [
+                    {
+                        "id": 1,
+                        "activity_type": "running",
+                        "duration": 30,
+                        "distance": "5.00",
+                        "calories_burned": 350,
+                        "date": "2024-01-15",
+                        "notes": "Morning run in the park",
+                        "created_at": "2024-01-15T08:30:00Z"
+                    }
+                ]
+            }
+        })
+    
     activities = Activity.objects.filter(user=request.user)
     
     # Apply filters
@@ -177,11 +260,30 @@ def activity_history(request):
     })
 
 @api_view(['GET'])
+@authentication_classes([APIKeyAuthentication])
 @permission_classes([IsAuthenticated])
 def leaderboard(request):
     """
     Get leaderboard data for distance and calories.
     """
+    if hasattr(request.user, 'developer'):
+        return Response({
+            "message": "Leaderboard endpoint",
+            "developer": request.user.developer.name,
+            "demo_leaderboard": {
+                "distance_leaderboard": [
+                    {"username": "runner_pro", "total_distance": 500.25},
+                    {"username": "fitness_fan", "total_distance": 450.75},
+                    {"username": "marathon_mike", "total_distance": 425.50}
+                ],
+                "calories_leaderboard": [
+                    {"username": "calorie_crusher", "total_calories": 15000},
+                    {"username": "burn_machine", "total_calories": 12500},
+                    {"username": "fit_fanatic", "total_calories": 11000}
+                ]
+            }
+        })
+    
     from django.contrib.auth import get_user_model
     User = get_user_model()
     

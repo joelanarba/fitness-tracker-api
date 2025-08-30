@@ -117,9 +117,11 @@ DEFAULT_AUTO_FIELD = 'django.db.models.BigAutoField'
 
 # Django REST Framework
 REST_FRAMEWORK = {
-    'DEFAULT_AUTHENTICATION_CLASSES': (
-        'rest_framework_simplejwt.authentication.JWTAuthentication',
-    ),
+    'DEFAULT_AUTHENTICATION_CLASSES': [
+        'users.authentication.APIKeyAuthentication',  # API Key auth first
+        'rest_framework_simplejwt.authentication.JWTAuthentication',  # JWT fallback
+        'rest_framework.authentication.SessionAuthentication',  # For admin
+    ],
     'DEFAULT_PERMISSION_CLASSES': [
         'rest_framework.permissions.IsAuthenticated',
     ],
@@ -132,6 +134,7 @@ REST_FRAMEWORK = {
         'django_filters.rest_framework.DjangoFilterBackend',
         'rest_framework.filters.OrderingFilter',
     ],
+    'EXCEPTION_HANDLER': 'rest_framework.views.exception_handler',
 }
 
 # Simple JWT
@@ -185,3 +188,7 @@ if not DEBUG:
     SECURE_SSL_REDIRECT = True
     SESSION_COOKIE_SECURE = True
     CSRF_COOKIE_SECURE = True
+
+# API Key Configuration
+API_KEY_CUSTOM_HEADER = 'HTTP_X_API_KEY'  
+API_RATE_LIMIT_ENABLE = True  # Enable rate limiting 
