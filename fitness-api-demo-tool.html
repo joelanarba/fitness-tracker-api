@@ -1,0 +1,701 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Fitness Tracker API Demo Tool</title>
+    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css">
+    <style>
+        * {
+            margin: 0;
+            padding: 0;
+            box-sizing: border-box;
+        }
+        
+        body {
+            font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', 'Roboto', sans-serif;
+            background-color: #f5f7fa;
+            min-height: 100vh;
+            padding: 20px;
+            color: #2d3748;
+        }
+        
+        .container {
+            max-width: 1200px;
+            margin: 0 auto;
+            background: white;
+            border-radius: 8px;
+            box-shadow: 0 4px 6px rgba(0, 0, 0, 0.05);
+            overflow: hidden;
+        }
+        
+        .header {
+            background-color: #4a5568;
+            color: white;
+            padding: 30px;
+            text-align: center;
+            border-bottom: 1px solid #e2e8f0;
+        }
+        
+        .header h1 {
+            font-size: 2.2rem;
+            margin-bottom: 10px;
+            font-weight: 600;
+        }
+        
+        .header p {
+            opacity: 0.9;
+            font-size: 1rem;
+        }
+        
+        .content {
+            padding: 30px;
+        }
+        
+        .url-config {
+            background-color: #f7fafc;
+            padding: 20px;
+            border-radius: 6px;
+            margin-bottom: 30px;
+            border: 1px solid #e2e8f0;
+        }
+        
+        .url-config label {
+            display: block;
+            font-weight: 600;
+            margin-bottom: 8px;
+            color: #2d3748;
+        }
+        
+        .url-config input {
+            width: 100%;
+            padding: 12px;
+            border: 1px solid #cbd5e0;
+            border-radius: 4px;
+            font-size: 16px;
+            transition: border-color 0.3s;
+        }
+        
+        .url-config input:focus {
+            outline: none;
+            border-color: #4299e1;
+            box-shadow: 0 0 0 3px rgba(66, 153, 225, 0.1);
+        }
+        
+        .url-config .help-text {
+            margin-top: 8px;
+            color: #718096;
+            font-size: 14px;
+        }
+        
+        .controls {
+            display: flex;
+            gap: 15px;
+            margin-bottom: 30px;
+            flex-wrap: wrap;
+            align-items: center;
+        }
+        
+        .btn {
+            padding: 10px 20px;
+            border: none;
+            border-radius: 4px;
+            font-weight: 500;
+            cursor: pointer;
+            transition: all 0.2s;
+            display: flex;
+            align-items: center;
+            gap: 8px;
+            text-decoration: none;
+            font-size: 14px;
+        }
+        
+        .btn-primary {
+            background-color: #38a169;
+            color: white;
+        }
+        
+        .btn-primary:hover {
+            background-color: #2f855a;
+        }
+        
+        .btn-secondary {
+            background-color: #718096;
+            color: white;
+        }
+        
+        .btn-secondary:hover {
+            background-color: #4a5568;
+        }
+        
+        .btn:disabled {
+            opacity: 0.6;
+            cursor: not-allowed;
+        }
+        
+        .status {
+            background-color: #c6f6d5;
+            color: #2f855a;
+            padding: 8px 16px;
+            border-radius: 20px;
+            font-size: 14px;
+            font-weight: 500;
+            border: 1px solid #9ae6b4;
+        }
+        
+        .demo-grid {
+            display: grid;
+            grid-template-columns: 1fr 1fr;
+            gap: 30px;
+        }
+        
+        @media (max-width: 768px) {
+            .demo-grid {
+                grid-template-columns: 1fr;
+            }
+            .controls {
+                flex-direction: column;
+            }
+        }
+        
+        .panel {
+            background-color: #f7fafc;
+            border-radius: 6px;
+            padding: 20px;
+            border: 1px solid #e2e8f0;
+        }
+        
+        .panel h2 {
+            color: #2d3748;
+            margin-bottom: 20px;
+            font-size: 1.3rem;
+            font-weight: 600;
+        }
+        
+        .demo-step {
+            background: white;
+            padding: 16px;
+            border-radius: 6px;
+            margin-bottom: 12px;
+            border-left: 3px solid #4299e1;
+            box-shadow: 0 1px 3px rgba(0,0,0,0.1);
+        }
+        
+        .demo-step h3 {
+            color: #2d3748;
+            margin-bottom: 6px;
+            font-size: 1rem;
+            font-weight: 600;
+        }
+        
+        .demo-step p {
+            color: #718096;
+            font-size: 14px;
+            margin-bottom: 12px;
+        }
+        
+        .demo-step button {
+            background-color: #4299e1;
+            color: white;
+            border: none;
+            padding: 8px 16px;
+            border-radius: 4px;
+            cursor: pointer;
+            font-size: 13px;
+            transition: background-color 0.2s;
+        }
+        
+        .demo-step button:hover {
+            background-color: #3182ce;
+        }
+        
+        .results {
+            max-height: 500px;
+            overflow-y: auto;
+        }
+        
+        .result-item {
+            background: white;
+            border-radius: 6px;
+            padding: 16px;
+            margin-bottom: 12px;
+            border-left: 3px solid #38a169;
+            box-shadow: 0 1px 3px rgba(0,0,0,0.1);
+        }
+        
+        .result-item.error {
+            border-left-color: #e53e3e;
+            background-color: #fed7d7;
+        }
+        
+        .result-header {
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            margin-bottom: 10px;
+        }
+        
+        .result-title {
+            font-weight: 600;
+            color: #2d3748;
+            display: flex;
+            align-items: center;
+            gap: 8px;
+        }
+        
+        .result-time {
+            font-size: 12px;
+            color: #a0aec0;
+        }
+        
+        .result-data {
+            background-color: #edf2f7;
+            padding: 12px;
+            border-radius: 4px;
+            font-family: 'Courier New', monospace;
+            font-size: 12px;
+            white-space: pre-wrap;
+            max-height: 200px;
+            overflow-y: auto;
+            border: 1px solid #e2e8f0;
+        }
+        
+        .loading {
+            display: inline-block;
+            width: 14px;
+            height: 14px;
+            border: 2px solid #cbd5e0;
+            border-top: 2px solid #4299e1;
+            border-radius: 50%;
+            animation: spin 1s linear infinite;
+        }
+        
+        @keyframes spin {
+            0% { transform: rotate(0deg); }
+            100% { transform: rotate(360deg); }
+        }
+        
+        .empty-state {
+            text-align: center;
+            color: #a0aec0;
+            padding: 40px;
+        }
+        
+        .instructions {
+            background-color: #ebf8ff;
+            border: 1px solid #bee3f8;
+            border-radius: 6px;
+            padding: 20px;
+            margin-top: 30px;
+        }
+        
+        .instructions h3 {
+            color: #2b6cb0;
+            margin-bottom: 15px;
+            font-weight: 600;
+        }
+        
+        .instructions ul {
+            color: #2b6cb0;
+            padding-left: 20px;
+        }
+        
+        .instructions li {
+            margin-bottom: 8px;
+        }
+        
+        .icon {
+            width: 16px;
+            height: 16px;
+        }
+        
+        .success-icon {
+            color: #38a169;
+        }
+        
+        .error-icon {
+            color: #e53e3e;
+        }
+    </style>
+</head>
+<body>
+    <div class="container">
+        <div class="header">
+            <h1>
+                <i class="fas fa-running"></i>
+                Fitness Tracker API Demo Tool
+            </h1>
+            <p>Interactive testing interface for the Fitness Tracker REST API</p>
+        </div>
+        
+        <div class="content">
+            <div class="url-config">
+                <label for="apiUrl">
+                    <i class="fas fa-link"></i>
+                    API Base URL:
+                </label>
+                <input type="url" id="apiUrl" value="https://fitness-tracker-api-soub.onrender.com" placeholder="https://your-app.onrender.com">
+                <p class="help-text">Enter your deployed API URL above</p>
+            </div>
+            
+            <div class="controls">
+                <button class="btn btn-primary" id="runFullDemo">
+                    <i class="fas fa-play"></i>
+                    Run Full Demo
+                </button>
+                <button class="btn btn-secondary" id="clearResults">
+                    <i class="fas fa-trash"></i>
+                    Clear Results
+                </button>
+                <div class="status" id="authStatus" style="display: none;">
+                    <i class="fas fa-check-circle"></i>
+                    Authenticated
+                </div>
+            </div>
+            
+            <div class="demo-grid">
+                <div class="panel">
+                    <h2>
+                        <i class="fas fa-tasks"></i>
+                        Demo Steps
+                    </h2>
+                    <div id="demoSteps">
+                        <div class="demo-step">
+                            <h3>
+                                <i class="fas fa-user-plus"></i>
+                                1. Register User
+                            </h3>
+                            <p>Create a new user account</p>
+                            <button onclick="registerUser()">
+                                <i class="fas fa-play"></i>
+                                Run Step
+                            </button>
+                        </div>
+                        <div class="demo-step">
+                            <h3>
+                                <i class="fas fa-sign-in-alt"></i>
+                                2. Login User
+                            </h3>
+                            <p>Login with existing credentials</p>
+                            <button onclick="loginUser()">
+                                <i class="fas fa-play"></i>
+                                Run Step
+                            </button>
+                        </div>
+                        <div class="demo-step">
+                            <h3>
+                                <i class="fas fa-running"></i>
+                                3. Log Running Activity
+                            </h3>
+                            <p>Create a fitness activity</p>
+                            <button onclick="createActivity('running')">
+                                <i class="fas fa-play"></i>
+                                Run Step
+                            </button>
+                        </div>
+                        <div class="demo-step">
+                            <h3>
+                                <i class="fas fa-bicycle"></i>
+                                4. Log Cycling Activity
+                            </h3>
+                            <p>Create another activity type</p>
+                            <button onclick="createActivity('cycling')">
+                                <i class="fas fa-play"></i>
+                                Run Step
+                            </button>
+                        </div>
+                        <div class="demo-step">
+                            <h3>
+                                <i class="fas fa-list"></i>
+                                5. View All Activities
+                            </h3>
+                            <p>Get list of user activities</p>
+                            <button onclick="viewActivities()">
+                                <i class="fas fa-play"></i>
+                                Run Step
+                            </button>
+                        </div>
+                        <div class="demo-step">
+                            <h3>
+                                <i class="fas fa-bullseye"></i>
+                                6. Set Fitness Goal
+                            </h3>
+                            <p>Create a monthly distance goal</p>
+                            <button onclick="createGoal()">
+                                <i class="fas fa-play"></i>
+                                Run Step
+                            </button>
+                        </div>
+                        <div class="demo-step">
+                            <h3>
+                                <i class="fas fa-chart-bar"></i>
+                                7. View Metrics
+                            </h3>
+                            <p>Get activity statistics</p>
+                            <button onclick="viewMetrics()">
+                                <i class="fas fa-play"></i>
+                                Run Step
+                            </button>
+                        </div>
+                        <div class="demo-step">
+                            <h3>
+                                <i class="fas fa-trophy"></i>
+                                8. View Leaderboard
+                            </h3>
+                            <p>See competitive rankings</p>
+                            <button onclick="viewLeaderboard()">
+                                <i class="fas fa-play"></i>
+                                Run Step
+                            </button>
+                        </div>
+                    </div>
+                </div>
+                
+                <div class="panel">
+                    <h2>
+                        <i class="fas fa-terminal"></i>
+                        API Response Results
+                    </h2>
+                    <div class="results" id="results">
+                        <div class="empty-state">
+                            <i class="fas fa-chart-line" style="font-size: 48px; margin-bottom: 16px; color: #cbd5e0;"></i>
+                            <p>No results yet. Run a demo step to see API responses.</p>
+                        </div>
+                    </div>
+                </div>
+            </div>
+            
+            <div class="instructions">
+                <h3>
+                    <i class="fas fa-info-circle"></i>
+                    How to Use This Demo Tool
+                </h3>
+                <ul>
+                    <li>Update the API URL above with your deployed application URL</li>
+                    <li>Click "Run Full Demo" for a complete automated walkthrough</li>
+                    <li>Or run individual steps to demonstrate specific features</li>
+                    <li>Use this tool during presentations to show live API responses</li>
+                    <li>The tool automatically handles authentication tokens</li>
+                </ul>
+            </div>
+        </div>
+    </div>
+
+    <script>
+        let token = '';
+        let isLoading = false;
+        
+        function getApiUrl() {
+            return document.getElementById('apiUrl').value;
+        }
+        
+        function addResult(title, data, success = true) {
+            const resultsDiv = document.getElementById('results');
+            const emptyState = resultsDiv.querySelector('.empty-state');
+            if (emptyState) {
+                emptyState.remove();
+            }
+            
+            const resultDiv = document.createElement('div');
+            resultDiv.className = `result-item ${success ? '' : 'error'}`;
+            
+            const timestamp = new Date().toLocaleTimeString();
+            const icon = success ? 'fas fa-check-circle success-icon' : 'fas fa-times-circle error-icon';
+            
+            resultDiv.innerHTML = `
+                <div class="result-header">
+                    <span class="result-title">
+                        <i class="${icon}"></i>
+                        ${title}
+                    </span>
+                    <span class="result-time">${timestamp}</span>
+                </div>
+                <div class="result-data">${typeof data === 'string' ? data : JSON.stringify(data, null, 2)}</div>
+            `;
+            
+            resultsDiv.insertBefore(resultDiv, resultsDiv.firstChild);
+            
+            // Keep only last 10 results
+            const results = resultsDiv.querySelectorAll('.result-item');
+            if (results.length > 10) {
+                results[results.length - 1].remove();
+            }
+        }
+        
+        async function makeRequest(endpoint, method = 'GET', body = null, requiresAuth = false) {
+            setLoading(true);
+            try {
+                const headers = {
+                    'Content-Type': 'application/json',
+                };
+                
+                if (requiresAuth && token) {
+                    headers['Authorization'] = `Bearer ${token}`;
+                }
+
+                const response = await fetch(`${getApiUrl()}${endpoint}`, {
+                    method,
+                    headers,
+                    body: body ? JSON.stringify(body) : null,
+                });
+
+                const data = await response.json();
+                
+                if (response.ok) {
+                    addResult(`${method} ${endpoint}`, data, true);
+                    return data;
+                } else {
+                    addResult(`${method} ${endpoint}`, data, false);
+                    return null;
+                }
+            } catch (error) {
+                addResult(`${method} ${endpoint}`, `Error: ${error.message}`, false);
+                return null;
+            } finally {
+                setLoading(false);
+            }
+        }
+        
+        function setLoading(loading) {
+            isLoading = loading;
+            const runButton = document.getElementById('runFullDemo');
+            const authStatus = document.getElementById('authStatus');
+            
+            runButton.disabled = loading;
+            if (loading) {
+                runButton.innerHTML = '<span class="loading"></span> Running Demo...';
+            } else {
+                runButton.innerHTML = '<i class="fas fa-play"></i> Run Full Demo';
+            }
+            
+            if (token) {
+                authStatus.style.display = 'flex';
+            }
+        }
+        
+        async function registerUser() {
+            const userData = {
+                username: `demo_user_${Date.now()}`,
+                email: `demo${Date.now()}@example.com`,
+                password: 'demo123456',
+                password_confirm: 'demo123456',
+                first_name: 'Demo',
+                last_name: 'User'
+            };
+            
+            const result = await makeRequest('/api/auth/register/', 'POST', userData);
+            if (result && result.access) {
+                token = result.access;
+                addResult('Token Saved', 'Authentication token automatically saved for subsequent requests', true);
+                document.getElementById('authStatus').style.display = 'flex';
+            }
+            return result;
+        }
+        
+        async function loginUser() {
+            const loginData = {
+                username: 'demo_user',
+                password: 'demo123456'
+            };
+            
+            const result = await makeRequest('/api/token/', 'POST', loginData);
+            if (result && result.access) {
+                token = result.access;
+                addResult('Token Updated', 'New authentication token saved', true);
+                document.getElementById('authStatus').style.display = 'flex';
+            }
+            return result;
+        }
+        
+        async function createActivity(type) {
+            const activityTypes = {
+                running: {
+                    duration: Math.floor(Math.random() * 60) + 20,
+                    distance: (Math.random() * 10 + 2).toFixed(1),
+                    calories_burned: Math.floor(Math.random() * 400) + 200,
+                    notes: 'Demo running activity'
+                },
+                cycling: {
+                    duration: Math.floor(Math.random() * 90) + 30,
+                    distance: (Math.random() * 20 + 5).toFixed(1),
+                    calories_burned: Math.floor(Math.random() * 600) + 300,
+                    notes: 'Demo cycling activity'
+                }
+            };
+            
+            const today = new Date();
+            if (type === 'cycling') {
+                today.setDate(today.getDate() - 1);
+            }
+            
+            const activityData = {
+                activity_type: type,
+                ...activityTypes[type],
+                date: today.toISOString().split('T')[0]
+            };
+            
+            return await makeRequest('/api/activities/', 'POST', activityData, true);
+        }
+        
+        async function viewActivities() {
+            return await makeRequest('/api/activities/', 'GET', null, true);
+        }
+        
+        async function createGoal() {
+            const today = new Date();
+            const startOfMonth = new Date(today.getFullYear(), today.getMonth(), 1);
+            const endOfMonth = new Date(today.getFullYear(), today.getMonth() + 1, 0);
+            
+            const goalData = {
+                goal_type: 'distance',
+                target_value: 50,
+                period: 'monthly',
+                activity_type: 'running',
+                start_date: startOfMonth.toISOString().split('T')[0],
+                end_date: endOfMonth.toISOString().split('T')[0]
+            };
+            
+            return await makeRequest('/api/activities/goals/', 'POST', goalData, true);
+        }
+        
+        async function viewMetrics() {
+            return await makeRequest('/api/activities/metrics/', 'GET', null, true);
+        }
+        
+        async function viewLeaderboard() {
+            return await makeRequest('/api/activities/leaderboard/', 'GET', null, true);
+        }
+        
+        async function runFullDemo() {
+            document.getElementById('results').innerHTML = '';
+            addResult('Starting Full Demo', 'Running all demo steps automatically...', true);
+            
+            const steps = [
+                registerUser,
+                () => new Promise(resolve => setTimeout(() => resolve(createActivity('running')), 1000)),
+                () => new Promise(resolve => setTimeout(() => resolve(createActivity('cycling')), 1000)),
+                () => new Promise(resolve => setTimeout(() => resolve(viewActivities()), 1000)),
+                () => new Promise(resolve => setTimeout(() => resolve(createGoal()), 1000)),
+                () => new Promise(resolve => setTimeout(() => resolve(viewMetrics()), 1000)),
+                () => new Promise(resolve => setTimeout(() => resolve(viewLeaderboard()), 1000))
+            ];
+            
+            for (const step of steps) {
+                await step();
+            }
+            
+            addResult('Demo Complete', 'All API endpoints tested successfully', true);
+        }
+        
+        function clearResults() {
+            document.getElementById('results').innerHTML = '<div class="empty-state"><i class="fas fa-chart-line" style="font-size: 48px; margin-bottom: 16px; color: #cbd5e0;"></i><p>No results yet. Run a demo step to see API responses.</p></div>';
+            token = '';
+            document.getElementById('authStatus').style.display = 'none';
+        }
+        
+        // Event listeners
+        document.getElementById('runFullDemo').addEventListener('click', runFullDemo);
+        document.getElementById('clearResults').addEventListener('click', clearResults);
+    </script>
+</body>
+</html>

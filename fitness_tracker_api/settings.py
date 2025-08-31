@@ -117,11 +117,9 @@ DEFAULT_AUTO_FIELD = 'django.db.models.BigAutoField'
 
 # Django REST Framework
 REST_FRAMEWORK = {
-    'DEFAULT_AUTHENTICATION_CLASSES': [
-        'users.authentication.APIKeyAuthentication',  # API Key auth first
-        'rest_framework_simplejwt.authentication.JWTAuthentication',  # JWT fallback
-        'rest_framework.authentication.SessionAuthentication',  # For admin
-    ],
+    'DEFAULT_AUTHENTICATION_CLASSES': (
+        'rest_framework_simplejwt.authentication.JWTAuthentication',
+    ),
     'DEFAULT_PERMISSION_CLASSES': [
         'rest_framework.permissions.IsAuthenticated',
     ],
@@ -134,7 +132,6 @@ REST_FRAMEWORK = {
         'django_filters.rest_framework.DjangoFilterBackend',
         'rest_framework.filters.OrderingFilter',
     ],
-    'EXCEPTION_HANDLER': 'rest_framework.views.exception_handler',
 }
 
 # Simple JWT
@@ -170,13 +167,41 @@ SIMPLE_JWT = {
     'SLIDING_TOKEN_REFRESH_LIFETIME': timedelta(days=1),
 }
 
-# CORS
-CORS_ALLOWED_ORIGINS = config(
-    'CORS_ALLOWED_ORIGINS',
-    default='http://localhost:3000,http://127.0.0.1:3000'
-).split(',')
+# CORS Settings 
+CORS_ALLOW_ALL_ORIGINS = True  
+
+# Alternative: Specific origins 
+# CORS_ALLOWED_ORIGINS = [
+#     'http://localhost:3000',
+#     'http://127.0.0.1:3000',
+#     'https://your-frontend-domain.com',
+#     'file://',  # For local HTML files
+# ]
 
 CORS_ALLOW_CREDENTIALS = True
+
+# Allow all headers for API requests
+CORS_ALLOW_HEADERS = [
+    'accept',
+    'accept-encoding',
+    'authorization',
+    'content-type',
+    'dnt',
+    'origin',
+    'user-agent',
+    'x-csrftoken',
+    'x-requested-with',
+]
+
+# Allow all HTTP methods
+CORS_ALLOW_METHODS = [
+    'DELETE',
+    'GET',
+    'OPTIONS',
+    'PATCH',
+    'POST',
+    'PUT',
+]
 
 # Security settings for production
 if not DEBUG:
@@ -188,7 +213,10 @@ if not DEBUG:
     SECURE_SSL_REDIRECT = True
     SESSION_COOKIE_SECURE = True
     CSRF_COOKIE_SECURE = True
-
-# API Key Configuration
-API_KEY_CUSTOM_HEADER = 'HTTP_X_API_KEY'  
-API_RATE_LIMIT_ENABLE = True  # Enable rate limiting 
+    
+    # More restrictive CORS for production
+    CORS_ALLOW_ALL_ORIGINS = False
+    CORS_ALLOWED_ORIGINS = [
+        'https://your-frontend-domain.com',
+        # Add production frontend domains here
+    ]
