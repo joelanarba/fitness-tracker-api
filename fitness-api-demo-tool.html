@@ -484,6 +484,7 @@
     <script>
         let token = '';
         let isLoading = false;
+        let demoCredentials = null; // Store credentials from registration
         
         function getApiUrl() {
             return document.getElementById('apiUrl').value;
@@ -531,7 +532,11 @@
                 
                 if (requiresAuth && token) {
                     headers['Authorization'] = `Bearer ${token}`;
+                    console.log('Using token:', token.substring(0, 20) + '...');
                 }
+
+                console.log('Making request to:', `${getApiUrl()}${endpoint}`);
+                console.log('Headers:', headers);
 
                 const response = await fetch(`${getApiUrl()}${endpoint}`, {
                     method,
@@ -583,6 +588,12 @@
                 last_name: 'User'
             };
             
+            // Store credentials for later login
+            demoCredentials = {
+                username: userData.username,
+                password: userData.password
+            };
+            
             const result = await makeRequest('/api/auth/register/', 'POST', userData);
             if (result && result.access) {
                 token = result.access;
@@ -593,9 +604,14 @@
         }
         
         async function loginUser() {
+            if (!demoCredentials) {
+                addResult('Login Skipped', 'No demo credentials available. Run registration first.', false);
+                return null;
+            }
+            
             const loginData = {
-                username: 'demo_user',
-                password: 'demo123456'
+                username: demoCredentials.username,
+                password: demoCredentials.password
             };
             
             const result = await makeRequest('/api/token/', 'POST', loginData);
@@ -690,6 +706,7 @@
         function clearResults() {
             document.getElementById('results').innerHTML = '<div class="empty-state"><i class="fas fa-chart-line" style="font-size: 48px; margin-bottom: 16px; color: #cbd5e0;"></i><p>No results yet. Run a demo step to see API responses.</p></div>';
             token = '';
+            demoCredentials = null; // Clear stored credentials
             document.getElementById('authStatus').style.display = 'none';
         }
         

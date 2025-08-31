@@ -2,6 +2,8 @@ from rest_framework import generics, status
 from rest_framework.decorators import api_view, permission_classes, authentication_classes
 from rest_framework.permissions import IsAuthenticated
 from rest_framework.response import Response
+from rest_framework.authentication import SessionAuthentication
+from rest_framework_simplejwt.authentication import JWTAuthentication
 from django_filters.rest_framework import DjangoFilterBackend
 from rest_framework.filters import OrderingFilter
 from django.db.models import Sum, Avg, Count
@@ -18,14 +20,9 @@ from .serializers import (
 from .filters import ActivityFilter
 from users.authentication import APIKeyAuthentication
 
-class IsAPIAuthenticated:
-    """Custom permission class that works with API key authentication"""
-    def has_permission(self, request, view):
-        # Check if user is authenticated via API key
-        return hasattr(request.user, 'developer') or request.user.is_authenticated
-
 class ActivityListCreateView(generics.ListCreateAPIView):
-    authentication_classes = [APIKeyAuthentication]
+    # Support both JWT and API Key authentication
+    authentication_classes = [JWTAuthentication, APIKeyAuthentication, SessionAuthentication]
     permission_classes = [IsAuthenticated]
     filter_backends = [DjangoFilterBackend, OrderingFilter]
     filterset_class = ActivityFilter
@@ -33,14 +30,17 @@ class ActivityListCreateView(generics.ListCreateAPIView):
     ordering = ['-date']
     
     def get_queryset(self):
-        # For API key users, we need to handle this differently
-        # Since we don't have a traditional User model for API key auth
+        # For API key users (developers)
         if hasattr(self.request.user, 'developer'):
-            # This is an API key user - return all activities for demonstration
+            # Return empty queryset for API key users
             # In a real scenario, you might want to create activities tied to developers
-            # or implement a different user system
-            return Activity.objects.none()  # Return empty for now
-        return Activity.objects.filter(user=self.request.user)
+            return Activity.objects.none()
+        
+        # For JWT authenticated users
+        if self.request.user.is_authenticated and hasattr(self.request.user, 'id'):
+            return Activity.objects.filter(user=self.request.user)
+        
+        return Activity.objects.none()
     
     def get_serializer_class(self):
         if self.request.method == 'POST':
@@ -48,54 +48,92 @@ class ActivityListCreateView(generics.ListCreateAPIView):
         return ActivitySerializer
     
     def perform_create(self, serializer):
-        # For API key authentication, we need to handle user assignment differently
+        # For API key authentication (developers)
         if hasattr(self.request.user, 'developer'):
-            # For now, we'll create a demo response
-            # In a real implementation, you might create a User for each Developer
-            # or modify the Activity model to reference Developer instead
-            raise NotImplementedError(
-                "Activity creation for API key users requires additional implementation. "
-                "Consider creating a User account for each Developer or modifying the Activity model."
-            )
-        serializer.save(user=self.request.user)
+            # For demo purposes, create a response without saving to database
+            return Response({
+                "message": "Activity creation demo for API key users",
+                "developer": self.request.user.developer.name,
+                "demo_activity": {
+                    "id": 999,
+                    "activity_type": serializer.validated_data.get('activity_type'),
+                    "duration": serializer.validated_data.get('duration'),
+                    "distance": str(serializer.validated_data.get('distance', 0)),
+                    "calories_burned": serializer.validated_data.get('calories_burned'),
+                    "date": str(serializer.validated_data.get('date')),
+                    "notes": serializer.validated_data.get('notes', ''),
+                    "created_at": datetime.now().isoformat()
+                }
+            }, status=status.HTTP_201_CREATED)
+        
+        # For JWT authenticated users
+        if self.request.user.is_authenticated and hasattr(self.request.user, 'id'):
+            serializer.save(user=self.request.user)
+        else:
+            raise PermissionError("Unable to create activity: invalid user")
 
 class ActivityDetailView(generics.RetrieveUpdateDestroyAPIView):
-    authentication_classes = [APIKeyAuthentication]
+    authentication_classes = [JWTAuthentication, APIKeyAuthentication, SessionAuthentication]
     permission_classes = [IsAuthenticated]
     serializer_class = ActivitySerializer
     
     def get_queryset(self):
         if hasattr(self.request.user, 'developer'):
             return Activity.objects.none()
-        return Activity.objects.filter(user=self.request.user)
+        if self.request.user.is_authenticated and hasattr(self.request.user, 'id'):
+            return Activity.objects.filter(user=self.request.user)
+        return Activity.objects.none()
 
 class GoalListCreateView(generics.ListCreateAPIView):
-    authentication_classes = [APIKeyAuthentication]
+    authentication_classes = [JWTAuthentication, APIKeyAuthentication, SessionAuthentication]
     permission_classes = [IsAuthenticated]
     serializer_class = GoalSerializer
     
     def get_queryset(self):
         if hasattr(self.request.user, 'developer'):
             return Goal.objects.none()
-        return Goal.objects.filter(user=self.request.user)
+        if self.request.user.is_authenticated and hasattr(self.request.user, 'id'):
+            return Goal.objects.filter(user=self.request.user)
+        return Goal.objects.none()
     
     def perform_create(self, serializer):
         if hasattr(self.request.user, 'developer'):
-            raise NotImplementedError("Goal creation for API key users requires additional implementation.")
-        serializer.save(user=self.request.user)
+            # Return demo response for API key users
+            return Response({
+                "message": "Goal creation demo for API key users",
+                "developer": self.request.user.developer.name,
+                "demo_goal": {
+                    "id": 999,
+                    "goal_type": serializer.validated_data.get('goal_type'),
+                    "target_value": str(serializer.validated_data.get('target_value')),
+                    "period": serializer.validated_data.get('period'),
+                    "activity_type": serializer.validated_data.get('activity_type'),
+                    "start_date": str(serializer.validated_data.get('start_date')),
+                    "end_date": str(serializer.validated_data.get('end_date')),
+                    "is_active": True,
+                    "created_at": datetime.now().isoformat()
+                }
+            }, status=status.HTTP_201_CREATED)
+        
+        if self.request.user.is_authenticated and hasattr(self.request.user, 'id'):
+            serializer.save(user=self.request.user)
+        else:
+            raise PermissionError("Unable to create goal: invalid user")
 
 class GoalDetailView(generics.RetrieveUpdateDestroyAPIView):
-    authentication_classes = [APIKeyAuthentication]
+    authentication_classes = [JWTAuthentication, APIKeyAuthentication, SessionAuthentication]
     permission_classes = [IsAuthenticated]
     serializer_class = GoalSerializer
     
     def get_queryset(self):
         if hasattr(self.request.user, 'developer'):
             return Goal.objects.none()
-        return Goal.objects.filter(user=self.request.user)
+        if self.request.user.is_authenticated and hasattr(self.request.user, 'id'):
+            return Goal.objects.filter(user=self.request.user)
+        return Goal.objects.none()
 
 @api_view(['GET'])
-@authentication_classes([APIKeyAuthentication])
+@authentication_classes([JWTAuthentication, APIKeyAuthentication, SessionAuthentication])
 @permission_classes([IsAuthenticated])
 def activity_metrics(request):
     """
@@ -105,7 +143,7 @@ def activity_metrics(request):
     - end_date: YYYY-MM-DD
     - activity_type: activity type to filter by
     """
-    # For API key users, return demo data
+    # For API key users (developers), return demo data
     if hasattr(request.user, 'developer'):
         return Response({
             "message": "Welcome to the Fitness Tracker API!",
@@ -127,7 +165,13 @@ def activity_metrics(request):
             }
         })
     
-    # Original implementation for JWT users
+    # For JWT authenticated users
+    if not (request.user.is_authenticated and hasattr(request.user, 'id')):
+        return Response(
+            {"error": "Authentication required"}, 
+            status=status.HTTP_401_UNAUTHORIZED
+        )
+    
     user = request.user
     activities = Activity.objects.filter(user=user)
     
@@ -188,7 +232,7 @@ def activity_metrics(request):
     return Response(serializer.data)
 
 @api_view(['GET'])
-@authentication_classes([APIKeyAuthentication])
+@authentication_classes([JWTAuthentication, APIKeyAuthentication, SessionAuthentication])
 @permission_classes([IsAuthenticated])
 def activity_history(request):
     """
@@ -217,6 +261,12 @@ def activity_history(request):
                 ]
             }
         })
+    
+    if not (request.user.is_authenticated and hasattr(request.user, 'id')):
+        return Response(
+            {"error": "Authentication required"}, 
+            status=status.HTTP_401_UNAUTHORIZED
+        )
     
     activities = Activity.objects.filter(user=request.user)
     
@@ -260,7 +310,7 @@ def activity_history(request):
     })
 
 @api_view(['GET'])
-@authentication_classes([APIKeyAuthentication])
+@authentication_classes([JWTAuthentication, APIKeyAuthentication, SessionAuthentication])
 @permission_classes([IsAuthenticated])
 def leaderboard(request):
     """
@@ -283,6 +333,12 @@ def leaderboard(request):
                 ]
             }
         })
+    
+    if not (request.user.is_authenticated and hasattr(request.user, 'id')):
+        return Response(
+            {"error": "Authentication required"}, 
+            status=status.HTTP_401_UNAUTHORIZED
+        )
     
     from django.contrib.auth import get_user_model
     User = get_user_model()
